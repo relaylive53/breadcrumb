@@ -3,11 +3,10 @@ const mongoose = require('mongoose');
 const locationSchema = new mongoose.Schema({
     userId: {
         type: Number,
-        required: [true, 'Please Provide userId'],
     },
     locationTagTiming: {
         type: Date,
-        required: [true, 'Please provide your dob'],
+        default: new Date()
     },
     latitude: {
         type: Number,

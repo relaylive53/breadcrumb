@@ -28,6 +28,8 @@ exports.signup =  catchAsync(async (req, res, next) => {
         gender: userObject.gender,
         password: userObject.password,
         confirmPassword: userObject.confirmPassword,
+        passwordChangedAt: userObject.passwordChangedAt,
+        role: userObject.role,
     });
     const token = signToken(newUser.userId);
     res.status(201).json({
@@ -62,18 +64,34 @@ exports.protect = catchAsync(async (req, res, next) => {
     if (req?.headers?.authorization?.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
     }
+    
     // 2. Verification the token
-    // console.log(token);
-
     if (!token) {
         return next(new AppError('You are not logged in. Please Login to get access', 401));
     }
-    
     const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-    console.log(decoded);
 
     // 3. If verification is success then will check if user still exists
-    // 4. Check if user changed password after token was issued
+    const freshUser = await User.find({userId: decoded.id})
+    if (!freshUser) {
+        return next(new AppError('The user belonging to this token does not exist', 401));
+    }
 
+    // 4. Check if user changed password after token was issued
+    // if (freshUser.changedPasswordAfter(decoded.iat)) {
+    //     return next(new AppError('User recently changed password!! Please log in again.', 401));
+    // }
+    req.user = freshUser;
     next();
-} ) 
+})
+
+exports.restrtictTo = (...roles) => {
+    return (req, res, next) => {
+        // roles is an array ['admin', 'hr']
+        console.log(req.user);
+        if (!roles.includes(req.user[0].role)) {
+            return next(new AppError('You do not have permission to perform this action', 403));
+        }
+        next();
+    }
+}
