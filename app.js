@@ -19,7 +19,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use(express.json());
 app.use(express.static(`${__dirname}/public`));
 
-const allowedOrigins = ['http://localhost:8100', 'http://localhost:8101'];
+const allowedOrigins = ['http://localhost:8100', 'http://localhost:8101', 'http://localhost'];
 
 app.use(cors({
   origin: allowedOrigins,
