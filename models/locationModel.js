@@ -6,7 +6,6 @@ const locationSchema = new mongoose.Schema({
     },
     locationTagTiming: {
         type: Date,
-        default: new Date()
     },
     latitude: {
         type: Number,

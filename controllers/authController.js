@@ -6,9 +6,10 @@ const bcrypt = require('bcryptjs');
 const User = require('./../models/userModal');
 const catchAsync = require('./../utils/catchAsync');
 
-const signToken = id => {
+const signToken = (id, userName) => {
     return jwt.sign({
-        id: id
+        id: id,
+        userName: userName,
     }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRATION
     });
@@ -31,7 +32,7 @@ exports.signup =  catchAsync(async (req, res, next) => {
         passwordChangedAt: userObject.passwordChangedAt,
         role: userObject.role,
     });
-    const token = signToken(newUser.userId);
+    const token = signToken(newUser.userId, newUser.userName);
     res.status(201).json({
         status: 'success',
         token: token,
@@ -42,16 +43,30 @@ exports.signup =  catchAsync(async (req, res, next) => {
 });
 
 exports.login = catchAsync(async (req, res, next) => {
-    const {email, password} = req.body;
-    if (!email || !password) {
-        return next(new AppError('Please provide email and password!', 400));
+    const {email, password, phone, loginType} = req.body;
+    if (loginType === 'phone') {
+        if (!password || !phone) {
+            return next(new AppError('Please provide phone and password!', 400));
+        }
+    } else if (loginType === 'email') {
+        if (!email || !password) {
+            return next(new AppError('Please provide email and password!', 400));
+        }
+    } else {
+        return next(new AppError('Please provide loginType, email/phone and password!', 400));
     }
-
-    const user = await User.findOne({ email }).select('+password');
+    let query;
+    if (email) {
+        query = User.findOne({ email });
+    } else {
+        query = User.findOne({ phone });
+    }
+    const user = await query.select('+password');
+    console.log(user);
     if (!user || ! (await user.correctPassword(password, user.password))) {
-        return next(new AppError('Incorrect email or password!', 401));
+        return next(new AppError('Incorrect email/phone or password!', 401));
     }
-    const token = signToken(user.userId);
+    const token = signToken(user.userId, user.userName);
     res.status(200).json({
         status: 'success',
         token,
