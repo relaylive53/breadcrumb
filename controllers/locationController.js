@@ -17,7 +17,7 @@ exports.addLocation =  catchAsync(async (req, res, next) => {
     const locationObject = req.body;
     const userLocation = await Location.create({
         userId: req.user[0].userId,
-        locationTagTiming: locationObject.locationTagTiming,
+        locationTagTiming: new Date(),
         latitude: locationObject.latitude,
         longitude: locationObject.longitude,
     });
