@@ -6,7 +6,8 @@ const router = express.Router();
 
 router.route('/')
     .get(authController.protect, locationController.getAllLocations)
-    .post(authController.protect, locationController.addLocation);
+    // .post(authController.protect, locationController.addLocation);
+    .post(locationController.addLocation);
 
 router.route('/:id')
     .get(locationController.getLocationById)
