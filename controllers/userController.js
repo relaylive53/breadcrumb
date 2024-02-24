@@ -3,6 +3,7 @@ const User = require('./../models/userModal');
 const catchAsync = require('./../utils/catchAsync')
 const factory = require('./handlerFactory');
 const multer = require("multer");
+const bcrypt = require('bcryptjs');
 
 const multerStorage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -79,14 +80,14 @@ exports.getMe = (req, res, next) => {
     next();
 };
 exports.updateMe = catchAsync (async (req, res, next) => {
-    console.log(req.file);
-    console.log(req.body);
     const filteredBody = filterObj(req.body, 'userName', 'password');
     if (req.file) {
         filteredBody.profilePhoto = req.file.filename;
     }
-    console.log(filteredBody);
-    const updatedUser = await User.findByIdAndUpdate(req.user[0].id, filteredBody, {new: true, runValidators: true});
+    if (filteredBody.password) {
+        filteredBody.password = await bcrypt.hash(filteredBody.password, 12);
+    }
+    const updatedUser = await User.findByIdAndUpdate(req.user[0].id, filteredBody, { new: true, runValidators: true });
     res.status(200).json({
         status: 'success',
         data: {
