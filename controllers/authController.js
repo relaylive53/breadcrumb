@@ -31,6 +31,7 @@ exports.signup =  catchAsync(async (req, res, next) => {
         confirmPassword: userObject.confirmPassword,
         passwordChangedAt: userObject.passwordChangedAt,
         role: userObject.role,
+        flag: userObject.flag,
     });
     const token = signToken(newUser.userId, newUser.userName);
     res.status(201).json({
@@ -87,8 +88,8 @@ exports.protect = catchAsync(async (req, res, next) => {
     const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
     // 3. If verification is success then will check if user still exists
-    const freshUser = await User.find({userId: decoded.id})
-    if (!freshUser) {
+    const freshUser = await User.find({userId: decoded.id});
+    if (freshUser.length === 0) {
         return next(new AppError('The user belonging to this token does not exist', 401));
     }
 
@@ -98,12 +99,18 @@ exports.protect = catchAsync(async (req, res, next) => {
     // }
     req.user = freshUser;
     next();
-})
+});
+
+// exports.protectPrivateRoutes = catchAsync(async (req, res, next) => {
+//     console.log(req.user);
+//     if (req?.user?.[0]?.role !== 'admin') {
+//         return next(new AppError('You are not allowed to perform this action', 401));
+//     }
+//     next();
+// });
 
 exports.restrtictTo = (...roles) => {
     return (req, res, next) => {
-        // roles is an array ['admin', 'hr']
-        console.log(req.user);
         if (!roles.includes(req.user[0].role)) {
             return next(new AppError('You do not have permission to perform this action', 403));
         }

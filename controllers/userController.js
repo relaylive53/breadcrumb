@@ -1,7 +1,43 @@
 
 const User = require('./../models/userModal');
 const catchAsync = require('./../utils/catchAsync')
+const factory = require('./handlerFactory');
+const multer = require("multer");
 
+const multerStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'public/img/users');
+    },
+    filename: (req, file, cb) => {
+        const ext = file.mimetype.split('/')[1];
+        cb(null, `user-${req.user[0].userId}.${ext}`);
+    }
+});
+
+const multerFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image')) {
+        cb (null, true);
+    } else {
+        cb(new AppError ('Not an image', 404), false);
+    }
+}
+
+const upload = multer({
+    storage: multerStorage,
+    fileFilter: multerFilter,
+});
+
+exports.uploadUserPhoto = upload.single('profilePhoto');
+
+const filterObj = (obj, ...allowedFields) => {
+    const newObj = {};
+    Object.keys(obj).forEach(ele => {
+        if (allowedFields.includes(ele)) {
+            newObj[ele] = obj[ele];
+        }
+    });
+    return newObj;
+}
 exports.getAllUsers = catchAsync (async (req, res, next) => {
     const users = await User.find();
     res.status(200).json({
@@ -14,26 +50,47 @@ exports.getAllUsers = catchAsync (async (req, res, next) => {
 });
 
 exports.createUser = (req, res) => {
+    // const users = await User.find();
     res.status(500).json({
         status: 'error',
         message: 'this route is not yet defined'
     })
 }
-exports.getUserById = (req, res) => {
-    res.status(500).json({
-        status: 'error',
-        message: 'this route is not yet defined'
+exports.getUserById = catchAsync (async (req, res, next) => {
+    let queryObj = {
+        userId: req.params.id,
+    };
+    const user = await User.find(queryObj);
+    res.status(200).json({
+        status: 'success',
+        results: user.length,
+        data: {
+            user,
+        }
     })
-}
-exports.updateUser = (req, res) => {
-    res.status(500).json({
-        status: 'error',
-        message: 'this route is not yet defined'
+});
+
+exports.getUser = factory.getOne(User);
+exports.updateUser = factory.updateOne(User);
+exports.deleteUser = factory.deleteOne(User);
+
+exports.getMe = (req, res, next) => {
+    req.params.id = req.user[0]._id;
+    next();
+};
+exports.updateMe = catchAsync (async (req, res, next) => {
+    console.log(req.file);
+    console.log(req.body);
+    const filteredBody = filterObj(req.body, 'userName', 'password');
+    if (req.file) {
+        filteredBody.profilePhoto = req.file.filename;
+    }
+    console.log(filteredBody);
+    const updatedUser = await User.findByIdAndUpdate(req.user[0].id, filteredBody, {new: true, runValidators: true});
+    res.status(200).json({
+        status: 'success',
+        data: {
+            user: updatedUser,
+        }
     })
-}
-exports.deleteUser = (req, res) => {
-    res.status(500).json({
-        status: 'error',
-        message: 'this route is not yet defined'
-    })
-}
+});
